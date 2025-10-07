@@ -14,5 +14,4 @@ export const routes: Routes = [
     path: 'calendar', 
     loadComponent: () => import('./components/calendar/calendar.component').then(m => m.CalendarComponent)
   }
-  // Removed wildcard route that was causing redirects on refresh
 ];
