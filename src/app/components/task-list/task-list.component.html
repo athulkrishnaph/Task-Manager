@@ -44,8 +44,12 @@
           <footer class="task-actions">
             <app-status-select [value]="task.status" (changed)="changeStatus(task, $event)" />
             <div class="spacer"></div>
-            <button class="btn btn-ghost btn-sm" (click)="openForm(task)">Edit</button>
-            <button class="btn btn-ghost btn-sm text-danger" (click)="deleteTask(task)">Delete</button>
+            <button class="btn btn-ghost btn-sm btn-icon" title="Edit task" (click)="openForm(task)">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button class="btn btn-ghost btn-sm btn-icon text-danger" title="Delete task" (click)="deleteTask(task)">
+              <i class="fa-solid fa-trash"></i>
+            </button>
           </footer>
         </article>
       }

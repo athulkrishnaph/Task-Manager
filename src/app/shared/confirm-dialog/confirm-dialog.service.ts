@@ -1,5 +1,5 @@
 import { Injectable, ApplicationRef, createComponent, EnvironmentInjector } from '@angular/core';
-import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogComponent } from './confirm-dialog.component';
 
 @Injectable({ providedIn: 'root' })
 export class ConfirmDialogService {
