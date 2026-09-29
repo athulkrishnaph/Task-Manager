@@ -1,0 +1,46 @@
+<div class="backdrop" (click)="close()">
+  <div class="modal card" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <header class="modal-header">
+      <h2>{{ task ? 'Edit task' : 'New task' }}</h2>
+      <button type="button" class="btn btn-ghost btn-icon" aria-label="Close" (click)="close()">✕</button>
+    </header>
+
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <div class="field">
+        <label for="title">Title</label>
+        <input id="title" formControlName="title" placeholder="What needs to be done?" autofocus />
+        <app-field-error [control]="form.controls.title" label="Title" />
+      </div>
+
+      <div class="field">
+        <label>Description</label>
+        <quill-editor formControlName="description" [modules]="editorModules" placeholder="Add details, steps or links..." />
+        <app-field-error [control]="form.controls.description" label="Description" />
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="deadline">Deadline</label>
+          <input id="deadline" type="date" formControlName="deadline" />
+          <app-field-error [control]="form.controls.deadline" label="Deadline" />
+        </div>
+
+        <div class="field">
+          <label for="status">Status</label>
+          <select id="status" formControlName="status">
+            @for (status of statuses; track status.value) {
+              <option [value]="status.value">{{ status.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <footer class="modal-actions">
+        <button type="button" class="btn btn-ghost" (click)="close()">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving">
+          {{ saving ? 'Saving...' : task ? 'Save changes' : 'Create task' }}
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>

@@ -1,22 +1,11 @@
 export interface Comment {
   id: string;
   taskId: string;
-  content: string;
+  parentId?: string; // set when the comment is a reply
   author: string;
-  createdAt: Date;
-  updatedAt: Date;
-  parentId?: string;
-  replies?: Comment[];
+  content: string;
+  createdAt: string; // ISO date-time
 }
 
-export interface CreateCommentRequest {
-  taskId: string;
-  content: string;
-  author: string;
-  parentId?: string;
-}
-
-export interface UpdateCommentRequest {
-  id: string;
-  content: string;
-}
+/** The fields a user fills in on the comment / reply form. */
+export type CommentInput = Pick<Comment, 'author' | 'content'>;

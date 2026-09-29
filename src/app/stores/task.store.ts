@@ -1,150 +1,71 @@
+import { Injectable } from '@angular/core';
 import { makeAutoObservable, runInAction } from 'mobx';
-import { Task, TaskStatus, CreateTaskRequest, UpdateTaskRequest } from '../models/task.model';
+import { Task, TaskInput, TaskStatus } from '../models/task.model';
 import { TaskService } from '../services/task.service';
+import { isDueWithin, isOverdue } from '../utils/task.utils';
+import { RequestState, trackRequest } from './track-request';
 
-export class TaskStore {
+@Injectable({ providedIn: 'root' })
+export class TaskStore implements RequestState {
   tasks: Task[] = [];
-  selectedTask: Task | null = null;
   isLoading = false;
   error: string | null = null;
 
-  constructor(private taskService: TaskService) {
+  constructor(private api: TaskService) {
     makeAutoObservable(this);
-    this.loadTasks();
+    this.load();
   }
 
-  // Load tasks from API
-  async loadTasks() {
-    this.isLoading = true;
-    this.error = null;
-
-    try {
-      const tasks = await this.taskService.getTasks().toPromise();
-      runInAction(() => {
-        this.tasks = tasks || [];
-        this.isLoading = false;
-      });
-    } catch (error) {
-      runInAction(() => {
-        this.error = 'Failed to load tasks';
-        this.isLoading = false;
-      });
-      console.error('Error loading tasks:', error);
-    }
+  get stats() {
+    return {
+      total: this.tasks.length,
+      pending: this.countByStatus('pending'),
+      inProgress: this.countByStatus('in_progress'),
+      completed: this.countByStatus('completed'),
+      overdue: this.tasks.filter(isOverdue).length,
+      dueThisWeek: this.tasks.filter(task => isDueWithin(task, 7)).length
+    };
   }
 
-  // Get all tasks
-  get allTasks(): Task[] {
-    return this.tasks;
+  countByStatus(status: TaskStatus): number {
+    return this.tasks.filter(task => task.status === status).length;
   }
 
-  // Get tasks by status
-  getTasksByStatus(status: TaskStatus): Task[] {
-    return this.tasks.filter(task => task.status === status);
-  }
-
-  // Get task by ID
-  getTaskById(id: string): Task | undefined {
+  getById(id: string): Task | undefined {
     return this.tasks.find(task => task.id === id);
   }
 
-  // Add new task
-  async addTask(taskData: CreateTaskRequest): Promise<Task> {
-    this.isLoading = true;
-    this.error = null;
-
-    try {
-      // Add timestamps before sending to API
-      const taskWithTimestamps = {
-        ...taskData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      const newTask = await this.taskService.createTask(taskWithTimestamps).toPromise();
-      runInAction(() => {
-        if (newTask) {
-          this.tasks.push(newTask);
-        }
-        this.isLoading = false;
-      });
-      return newTask!;
-    } catch (error) {
-      runInAction(() => {
-        this.error = 'Failed to add task';
-        this.isLoading = false;
-      });
-      throw error;
-    }
+  load() {
+    return trackRequest(this, 'Could not load tasks. Is json-server running (npm run json-server)?', async () => {
+      const tasks = await this.api.getAll();
+      runInAction(() => (this.tasks = tasks));
+    });
   }
 
-  // Update existing task
-  async updateTask(taskData: UpdateTaskRequest): Promise<Task> {
-    this.isLoading = true;
-    this.error = null;
-
-    try {
-      // Add updatedAt timestamp before sending to API
-      const taskWithTimestamp = {
-        ...taskData,
-        updatedAt: new Date().toISOString()
-      };
-
-      // Use PATCH instead of PUT to preserve existing fields
-      const updatedTask = await this.taskService.patchTask(taskData.id, taskWithTimestamp).toPromise();
-      runInAction(() => {
-        if (updatedTask) {
-          const taskIndex = this.tasks.findIndex(task => task.id === taskData.id);
-          if (taskIndex !== -1) {
-            this.tasks[taskIndex] = updatedTask;
-          }
-          if (this.selectedTask?.id === taskData.id) {
-            this.selectedTask = updatedTask;
-          }
-        }
-        this.isLoading = false;
-      });
-      return updatedTask!;
-    } catch (error) {
-      runInAction(() => {
-        this.error = 'Failed to update task';
-        this.isLoading = false;
-      });
-      throw error;
-    }
+  add(input: TaskInput) {
+    const now = new Date().toISOString();
+    return trackRequest(this, 'Could not create the task.', async () => {
+      const task = await this.api.create({ ...input, createdAt: now, updatedAt: now });
+      runInAction(() => this.tasks.push(task));
+    });
   }
 
-  // Delete task
-  async deleteTask(id: string): Promise<void> {
-    this.isLoading = true;
-    this.error = null;
-
-    try {
-      await this.taskService.deleteTask(id).toPromise();
-      runInAction(() => {
-        this.tasks = this.tasks.filter(task => task.id !== id);
-        if (this.selectedTask?.id === id) {
-          this.selectedTask = null;
-        }
-        this.isLoading = false;
-      });
-    } catch (error) {
-      runInAction(() => {
-        this.error = 'Failed to delete task';
-        this.isLoading = false;
-      });
-      throw error;
-    }
+  update(id: string, changes: Partial<TaskInput>) {
+    return trackRequest(this, 'Could not update the task.', async () => {
+      const updated = await this.api.update(id, { ...changes, updatedAt: new Date().toISOString() });
+      runInAction(() => (this.tasks = this.tasks.map(task => (task.id === id ? updated : task))));
+    });
   }
 
-  // Select task
-  selectTask(task: Task | null) {
-    this.selectedTask = task;
+  delete(id: string) {
+    return trackRequest(this, 'Could not delete the task.', async () => {
+      // `_dependent` tells json-server to delete the task's comments as well.
+      await this.api.delete(id, { _dependent: 'comments' });
+      runInAction(() => (this.tasks = this.tasks.filter(task => task.id !== id)));
+    });
   }
 
-  // Clear error
   clearError() {
     this.error = null;
   }
-
 }

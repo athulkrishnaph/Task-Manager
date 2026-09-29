@@ -1,52 +1,28 @@
-<div class="calendar-container">
-  <div class="header">
-    <h1>Task Calendar</h1>
-    <div class="calendar-stats">
-      <div class="stat-item">
-        <span class="stat-number">{{ getTotalTasks() }}</span>
-        <span class="stat-label">Total Tasks</span>
-      </div>
-      <div class="stat-item overdue">
-        <span class="stat-number">{{ getOverdueTasks() }}</span>
-        <span class="stat-label">Overdue</span>
-      </div>
-      <div class="stat-item upcoming">
-        <span class="stat-number">{{ getUpcomingTasks() }}</span>
-        <span class="stat-label">Due This Week</span>
-      </div>
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1>Calendar</h1>
+      <p class="muted">Click a day to add a task, click a task to open it, or drag it to change its deadline.</p>
     </div>
-  </div>
+    <button class="btn btn-primary" (click)="addTaskOn('')">+ New task</button>
+  </header>
 
-  <!-- Legend -->
-  <div class="legend">
-    <h3>Task Status Legend</h3>
-    <div class="legend-items">
-      @for (status of [TaskStatus.PENDING, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED]; track status) {
-        <div class="legend-item">
-          <div class="legend-color" [ngClass]="status"></div>
-          <span>{{ getStatusText(status) }} ({{ getTaskCountByStatus(status) }})</span>
-        </div>
+  <app-stats-bar [stats]="stats" />
+
+  <div class="card calendar">
+    <div class="legend">
+      @for (status of statuses; track status.value) {
+        <span class="legend-item status-{{ status.value }}">
+          <span class="dot"></span>
+          {{ status.label }} ({{ taskStore.countByStatus(status.value) }})
+        </span>
       }
     </div>
-  </div>
 
-  <!-- Calendar -->
-  <div class="calendar-wrapper">
-    <full-calendar [options]="calendarOptions"></full-calendar>
-  </div>
-
-  <!-- Quick Actions -->
-  <div class="quick-actions">
-    <h3>Quick Actions</h3>
-    <div class="action-buttons">
-      <button class="btn btn-primary" (click)="navigateToTasks()">
-        <i class="icon">📋</i>
-        View All Tasks
-      </button>
-      <button class="btn btn-secondary" (click)="navigateToTasks()">
-        <i class="icon">➕</i>
-        Add New Task
-      </button>
-    </div>
+    <full-calendar [options]="options" />
   </div>
 </div>
+
+@if (formOpen) {
+  <app-task-form [deadline]="newDeadline" (closed)="formOpen = false" />
+}

@@ -1,21 +1,23 @@
 <nav class="navbar">
-  <div class="nav-container">
-    <div class="nav-brand">
-      <h1>Task Manager</h1>
-    </div>
+  <div class="navbar-inner">
+    <a routerLink="/tasks" class="brand">
+      <span class="brand-logo">✓</span>
+      Task Manager
+    </a>
     <div class="nav-links">
-      <a routerLink="/tasks" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-        <i class="icon">📋</i>
-        Tasks
-      </a>
-      <a routerLink="/calendar" routerLinkActive="active">
-        <i class="icon">📅</i>
-        Calendar
-      </a>
+      <a routerLink="/tasks" routerLinkActive="active">Tasks</a>
+      <a routerLink="/calendar" routerLinkActive="active">Calendar</a>
     </div>
   </div>
 </nav>
 
-<main class="main-content">
+@if (error) {
+  <div class="error-banner" role="alert">
+    <span>⚠️ {{ error }}</span>
+    <button class="btn btn-ghost btn-sm" (click)="dismissError()">Dismiss</button>
+  </div>
+}
+
+<main>
   <router-outlet />
 </main>

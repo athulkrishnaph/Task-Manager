@@ -1,238 +1,113 @@
-@if (task) {
-  <div class="task-details-container">
-    <div class="header">
-      <button class="btn btn-secondary" (click)="goBack()">
-        <i class="icon">←</i>
-        Back to Tasks
-      </button>
-      <div class="header-actions">
-        <select 
-          [value]="task.status" 
-          (change)="updateTaskStatus($any($event.target).value)"
-          class="status-select"
-          [disabled]="isLoading"
-        >
-          <option value="pending">Pending</option>
-          <option value="in_progress">In Progress</option>
-          <option value="completed">Completed</option>
-        </select>
-      </div>
-    </div>
+<div class="page narrow">
+  <a routerLink="/tasks" class="back-link">← Back to tasks</a>
 
-    <div class="task-content">
-      <!-- Task Header -->
-      <div class="task-header">
-        <h1 class="task-title">{{ task.title }}</h1>
-        <div class="task-meta">
-          <div class="task-deadline" [class.overdue]="isOverdue(task.deadline)">
-            <i class="icon">📅</i>
-            <span>Due: {{ formatDate(task.deadline) }}</span>
-          </div>
-          <div class="task-status" [ngClass]="getStatusClass(task.status)">
-            {{ getStatusText(task.status) }}
-          </div>
+  @if (task; as task) {
+    <!-- Task -->
+    <section class="card task">
+      <header class="task-header">
+        <div class="task-heading">
+          <app-status-badge [status]="task.status" />
+          <h1 title="{{task.title}}">{{ (task.title.length>20)? task.title.slice(0,20)+"...":task.title }}</h1>
         </div>
-      </div>
+        <div class="task-buttons">
+          <button class="btn btn-ghost btn-icon" title="Edit task" (click)="formOpen = true">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
+          <button class="btn btn-danger btn-icon" title="Delete task" (click)="deleteTask(task)">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </header>
 
-      <!-- Task Description -->
-      <div class="task-description-section">
-        <div class="section-header">
-          <h2>Description</h2>
-          @if (!isEditing) {
-            <button 
-              class="btn btn-outline" 
-              (click)="startEditing()"
-            >
-              <i class="icon">✏️</i>
-              Edit
+      <dl class="meta">
+        <div>
+          <dt>Deadline</dt>
+          <dd [class.text-danger]="isOverdue(task)">
+            {{ task.deadline | date: 'fullDate' }}
+            @if (isOverdue(task)) {
+              (overdue)
+            }
+          </dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd><app-status-select [value]="task.status" (changed)="changeStatus($event)" /></dd>
+        </div>
+        <div>
+          <dt>Created</dt>
+          <dd>{{ task.createdAt | date: 'medium' }}</dd>
+        </div>
+        <div>
+          <dt>Last updated</dt>
+          <dd>{{ task.updatedAt | date: 'medium' }}</dd>
+        </div>
+      </dl>
+
+      <h2>Description</h2>
+      <div class="rich-text" [innerHTML]="task.description"></div>
+    </section>
+
+    <!-- Comments -->
+    <section class="card comments">
+      <h2>Comments ({{ commentStore.comments.length }})</h2>
+
+      <app-comment-form [taskId]="task.id" />
+
+      @for (comment of commentStore.topLevel; track comment.id) {
+        <div class="comment">
+          <div class="comment-header">
+            <span class="avatar">{{ comment.author.charAt(0) }}</span>
+            <strong>{{ comment.author }}</strong>
+            <span class="muted">{{ comment.createdAt | date: 'medium' }}</span>
+          </div>
+          <p class="comment-body">{{ comment.content }}</p>
+          <div class="comment-actions">
+            <button class="btn btn-ghost btn-sm" (click)="replyingTo = comment.id">
+              <i class="fa-solid fa-reply"></i> Reply
             </button>
-          }
-        </div>
-
-        @if (!isEditing) {
-          <div class="description-content">
-            <div class="rich-text-content" [innerHTML]="task.description"></div>
-          </div>
-        } @else {
-          <div class="description-editor">
-            <quill-editor
-              [(ngModel)]="task.description"
-              [modules]="quillConfig"
-              placeholder="Enter task description..."
-            ></quill-editor>
-            <div class="editor-actions">
-              <button class="btn btn-secondary" (click)="cancelEditing()">
-                Cancel
-              </button>
-              <button 
-                class="btn btn-primary" 
-                (click)="updateTaskDescription(task.description)"
-                [disabled]="isLoading"
-              >
-                {{ isLoading ? 'Saving...' : 'Save Changes' }}
-              </button>
-            </div>
-          </div>
-        }
-      </div>
-
-      <!-- Comments Section -->
-      <div class="comments-section">
-        <div class="section-header">
-          <h2>Comments ({{ getTopLevelComments().length }})</h2>
-        </div>
-
-        <!-- Add Comment Form -->
-        <div class="add-comment-form">
-          <form [formGroup]="commentForm" (ngSubmit)="addComment()">
-            <div class="form-group">
-              <label for="author">Your Name *</label>
-              <input 
-                type="text" 
-                id="author" 
-                formControlName="author"
-                placeholder="Enter your name"
-                [class.error]="isFieldInvalid(commentForm, 'author')"
-              >
-              @if (isFieldInvalid(commentForm, 'author')) {
-                <div class="error-message">
-                  {{ getFieldError(commentForm, 'author') }}
-                </div>
-              }
-            </div>
-            <div class="form-group">
-              <label for="comment">Add a Comment *</label>
-              <textarea 
-                id="comment" 
-                formControlName="content"
-                rows="4" 
-                placeholder="Share your thoughts about this task..."
-                [class.error]="isFieldInvalid(commentForm, 'content')"
-              ></textarea>
-              @if (isFieldInvalid(commentForm, 'content')) {
-                <div class="error-message">
-                  {{ getFieldError(commentForm, 'content') }}
-                </div>
-              }
-            </div>
-            <button 
-              type="submit"
-              class="btn btn-primary" 
-              [disabled]="isLoading || commentForm.invalid"
-            >
-              {{ isLoading ? 'Adding...' : 'Add Comment' }}
+            <button class="btn btn-ghost btn-sm text-danger btn-icon" title="Delete comment" (click)="deleteComment(comment)">
+              <i class="fa-solid fa-trash"></i>
             </button>
-          </form>
-        </div>
+          </div>
 
-        <!-- Comments List -->
-        @if (getTopLevelComments().length > 0) {
-          <div class="comments-list">
-            @for (comment of getTopLevelComments(); track trackByCommentId($index, comment)) {
-              <div class="comment-item">
+          <!-- Replies -->
+          <div class="replies">
+            @for (reply of commentStore.repliesOf(comment.id); track reply.id) {
+              <div class="comment reply">
                 <div class="comment-header">
-                  <div class="comment-author">{{ comment.author }}</div>
-                  <div class="comment-date">{{ formatDate(comment.createdAt) }}</div>
-                  <div class="comment-actions">
-                    <button class="btn-icon" (click)="startReply(comment)" title="Reply">
-                      <i class="icon">💬</i>
-                    </button>
-                    <button class="btn-icon delete" (click)="deleteComment(comment)" title="Delete">
-                      <i class="icon">🗑️</i>
-                    </button>
-                  </div>
+                  <span class="avatar">{{ reply.author.charAt(0) }}</span>
+                  <strong>{{ reply.author }}</strong>
+                  <span class="muted">{{ reply.createdAt | date: 'medium' }}</span>
                 </div>
-                
-                <div class="comment-content">
-                  {{ comment.content }}
+                <p class="comment-body">{{ reply.content }}</p>
+                <div class="comment-actions">
+                  <button class="btn btn-ghost btn-sm text-danger btn-icon" title="Delete comment" (click)="deleteComment(reply)">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
                 </div>
-
-                <!-- Reply Form -->
-                @if (replyToComment?.id === comment.id) {
-                  <div class="reply-form">
-                    <form [formGroup]="replyForm" (ngSubmit)="addReply(comment)">
-                      <div class="form-group">
-                        <label for="replyAuthor">Your Name *</label>
-                        <input 
-                          type="text" 
-                          id="replyAuthor" 
-                          formControlName="author"
-                          placeholder="Enter your name"
-                          [class.error]="isFieldInvalid(replyForm, 'author')"
-                        >
-                        @if (isFieldInvalid(replyForm, 'author')) {
-                          <div class="error-message">
-                            {{ getFieldError(replyForm, 'author') }}
-                          </div>
-                        }
-                      </div>
-                      <div class="form-group">
-                        <label for="replyContent">Reply *</label>
-                        <textarea 
-                          id="replyContent" 
-                          formControlName="content"
-                          rows="3" 
-                          placeholder="Write a reply..."
-                          [class.error]="isFieldInvalid(replyForm, 'content')"
-                        ></textarea>
-                        @if (isFieldInvalid(replyForm, 'content')) {
-                          <div class="error-message">
-                            {{ getFieldError(replyForm, 'content') }}
-                          </div>
-                        }
-                      </div>
-                      <div class="reply-actions">
-                        <button type="button" class="btn btn-secondary" (click)="cancelReply()">
-                          Cancel
-                        </button>
-                        <button 
-                          type="submit"
-                          class="btn btn-primary" 
-                          [disabled]="isLoading || replyForm.invalid"
-                        >
-                          {{ isLoading ? 'Adding...' : 'Reply' }}
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                }
-
-                <!-- Replies -->
-                @if (getRepliesForComment(comment.id).length > 0) {
-                  <div class="replies">
-                    @for (reply of getRepliesForComment(comment.id); track trackByCommentId($index, reply)) {
-                      <div class="reply-item">
-                        <div class="reply-header">
-                          <div class="reply-author">{{ reply.author }}</div>
-                          <div class="reply-date">{{ formatDate(reply.createdAt) }}</div>
-                          <button class="btn-icon delete" (click)="deleteComment(reply)" title="Delete">
-                            <i class="icon">🗑️</i>
-                          </button>
-                        </div>
-                        <div class="reply-content">
-                          {{ reply.content }}
-                        </div>
-                      </div>
-                    }
-                  </div>
-                }
               </div>
             }
+
+            @if (replyingTo === comment.id) {
+              <app-comment-form [taskId]="task.id" [parentId]="comment.id" (done)="replyingTo = null" />
+            }
           </div>
-        } @else {
-          <!-- No Comments State -->
-          <div class="no-comments">
-            <div class="no-comments-icon">💬</div>
-            <h3>No comments yet</h3>
-            <p>Be the first to share your thoughts about this task!</p>
-          </div>
+        </div>
+      } @empty {
+        @if (!commentStore.isLoading) {
+          <app-empty-state icon="💬" title="No comments yet" message="Start the conversation about this task." />
         }
-      </div>
-    </div>
-  </div>
-} @else {
-  <div class="loading">
-    <div class="loading-spinner"></div>
-    <p>Loading task details...</p>
-  </div>
-}
+      }
+    </section>
+
+    @if (formOpen) {
+      <app-task-form [task]="task" (closed)="formOpen = false" />
+    }
+  } @else if (taskStore.isLoading) {
+    <div class="spinner"></div>
+  } @else {
+    <app-empty-state icon="🤷" title="Task not found" message="It may have been deleted.">
+      <a routerLink="/tasks" class="btn btn-primary">Go to tasks</a>
+    </app-empty-state>
+  }
+</div>

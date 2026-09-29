@@ -1,0 +1,19 @@
+<div class="confirm-backdrop" (click)="onCancel()">
+  <div class="confirm-dialog card" (click)="$event.stopPropagation()">
+
+    <div class="confirm-icon">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+    </div>
+
+    <h2 class="confirm-title">{{ title }}</h2>
+    <p class="confirm-message">{{ message }}</p>
+
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" (click)="onCancel()">Cancel</button>
+      <button class="btn btn-danger" (click)="onConfirm()">
+        <i class="fa-solid fa-trash"></i> Delete
+      </button>
+    </div>
+
+  </div>
+</div>

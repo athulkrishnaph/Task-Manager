@@ -1,169 +1,93 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, NgZone, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { FullCalendarModule } from '@fullcalendar/angular';
-import { CalendarOptions, EventInput } from '@fullcalendar/core';
+import { CalendarOptions, EventDropArg, EventInput } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin from '@fullcalendar/interaction';
+import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
+import { reaction } from 'mobx';
+import { statusLabel, Task, TASK_STATUSES } from '../../models/task.model';
+import { TaskStore } from '../../stores/task.store';
+import { Stat, StatsBarComponent } from '../../shared/stats-bar/stats-bar.component';
+import { TaskFormComponent } from '../../shared/task-form/task-form.component';
 
-import { Task, TaskStatus } from '../../models/task.model';
-import { RootStore } from '../../stores/root.store';
+/** Converts a task into a FullCalendar event (coloured by its status class). */
+function toEvent(task: Task): EventInput {
+  return {
+    id: task.id,
+    title: task.title,
+    start: task.deadline,
+    allDay: true,
+    classNames: [`status-${task.status}`],
+    extendedProps: { status: task.status }
+  };
+}
 
 @Component({
   selector: 'app-calendar',
-  standalone: true,
-  imports: [CommonModule, FullCalendarModule],
+  imports: [FullCalendarModule, StatsBarComponent, TaskFormComponent],
   templateUrl: './calendar.component.html',
-  styleUrls: ['./calendar.component.css']
+  styleUrl: './calendar.component.css'
 })
-export class CalendarComponent implements OnInit {
+export class CalendarComponent implements OnDestroy {
   constructor(
+    public taskStore: TaskStore,
     private router: Router,
-    private rootStore: RootStore
-  ) {}
+    private zone: NgZone
+  ) {
+    // Rebuild the calendar events whenever tasks in the store change.
+    // This lives in the constructor because class fields run before the injected services are assigned.
+    // FullCalendar only picks up changes when `options` is replaced with a new object, and zone.run()
+    // is needed because MobX reactions run outside Angular's NgZone.
+    this.stopSync = reaction(
+      () => this.taskStore.tasks.map(toEvent),
+      events => this.zone.run(() => (this.options = { ...this.options, events })),
+      { fireImmediately: true }
+    );
+  }
 
-  // Make TaskStatus available in template
-  TaskStatus = TaskStatus;
+  private stopSync: () => void;
+  statuses = TASK_STATUSES;
 
-  tasks: Task[] = [];
-  calendarOptions: CalendarOptions = {
+  // Add-task modal (opened by clicking a day)
+  formOpen = false;
+  newDeadline = '';
+
+  options: CalendarOptions = {
+    plugins: [dayGridPlugin, interactionPlugin, listPlugin],
     initialView: 'dayGridMonth',
-    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin],
-    headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
-    },
-    events: [],
-    eventClick: this.onEventClick.bind(this),
-    eventDidMount: this.onEventDidMount.bind(this),
+    headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' },
+    buttonText: { today: 'Today', month: 'Month', list: 'List' },
     height: 'auto',
-    aspectRatio: 1.8,
-    dayMaxEvents: true,
-    moreLinkClick: 'popover',
-    eventDisplay: 'block',
-    eventTimeFormat: {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    }
+    dayMaxEvents: 3,
+    editable: true, // drag a task to another day to change its deadline
+    dateClick: (info: DateClickArg) => this.addTaskOn(info.dateStr),
+    eventClick: info => this.router.navigate(['/tasks', info.event.id]),
+    eventDrop: (info: EventDropArg) => this.moveTask(info),
+    eventDidMount: info => (info.el.title = `${info.event.title} · ${statusLabel(info.event.extendedProps['status'])}`)
   };
 
-  ngOnInit() {
-    this.loadTasks();
+  get stats(): Stat[] {
+    const s = this.taskStore.stats;
+    return [
+      { label: 'Total tasks', value: s.total },
+      { label: 'Due this week', value: s.dueThisWeek, tone: 'in_progress' },
+      { label: 'Overdue', value: s.overdue, tone: 'overdue' },
+      { label: 'Completed', value: s.completed, tone: 'completed' }
+    ];
   }
 
-  loadTasks() {
-    this.tasks = this.rootStore.taskStore.allTasks;
-    this.updateCalendarEvents();
+  addTaskOn(date: string) {
+    this.newDeadline = date;
+    this.formOpen = true;
   }
 
-  updateCalendarEvents() {
-    const events: EventInput[] = this.tasks.map(task => ({
-      id: task.id,
-      title: task.title,
-      start: new Date(task.deadline),
-      allDay: true,
-      backgroundColor: this.getTaskColor(task.status),
-      borderColor: this.getTaskBorderColor(task.status),
-      textColor: this.getTaskTextColor(task.status),
-      extendedProps: {
-        task: task
-      }
-    }));
-
-    this.calendarOptions = {
-      ...this.calendarOptions,
-      events: events
-    };
+  async moveTask(info: EventDropArg) {
+    const ok = await this.taskStore.update(info.event.id, { deadline: info.event.startStr });
+    if (!ok) info.revert();
   }
 
-  getTaskColor(status: TaskStatus): string {
-    switch (status) {
-      case TaskStatus.PENDING:
-        return '#f6ad55'; // Orange
-      case TaskStatus.IN_PROGRESS:
-        return '#4299e1'; // Blue
-      case TaskStatus.COMPLETED:
-        return '#48bb78'; // Green
-      default:
-        return '#a0aec0'; // Gray
-    }
-  }
-
-  getTaskBorderColor(status: TaskStatus): string {
-    switch (status) {
-      case TaskStatus.PENDING:
-        return '#ed8936';
-      case TaskStatus.IN_PROGRESS:
-        return '#3182ce';
-      case TaskStatus.COMPLETED:
-        return '#38a169';
-      default:
-        return '#718096';
-    }
-  }
-
-  getTaskTextColor(status: TaskStatus): string {
-    return '#ffffff';
-  }
-
-  onEventClick(info: any) {
-    const task = info.event.extendedProps.task;
-    if (task) {
-      this.router.navigate(['/tasks', task.id]);
-    }
-  }
-
-  onEventDidMount(info: any) {
-    const task = info.event.extendedProps.task;
-    if (task) {
-      // Add tooltip with task details
-      const element = info.el;
-      element.title = `${task.title}\nStatus: ${this.getStatusText(task.status)}\nDescription: ${task.description.substring(0, 100)}...`;
-    }
-  }
-
-  getStatusText(status: TaskStatus): string {
-    switch (status) {
-      case TaskStatus.PENDING:
-        return 'Pending';
-      case TaskStatus.IN_PROGRESS:
-        return 'In Progress';
-      case TaskStatus.COMPLETED:
-        return 'Completed';
-      default:
-        return '';
-    }
-  }
-
-  getTaskCountByStatus(status: TaskStatus): number {
-    return this.tasks.filter(task => task.status === status).length;
-  }
-
-  getTotalTasks(): number {
-    return this.tasks.length;
-  }
-
-  getOverdueTasks(): number {
-    const now = new Date();
-    return this.tasks.filter(task => 
-      new Date(task.deadline) < now && task.status !== TaskStatus.COMPLETED
-    ).length;
-  }
-
-  getUpcomingTasks(): number {
-    const now = new Date();
-    const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    return this.tasks.filter(task => {
-      const deadline = new Date(task.deadline);
-      return deadline >= now && deadline <= nextWeek && task.status !== TaskStatus.COMPLETED;
-    }).length;
-  }
-
-  navigateToTasks() {
-    this.router.navigate(['/tasks']);
+  ngOnDestroy() {
+    this.stopSync();
   }
 }

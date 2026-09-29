@@ -1,0 +1,10 @@
+<select
+  class="status-select status-{{ value }}"
+  aria-label="Task status"
+  [disabled]="disabled"
+  (change)="changed.emit($any($event.target).value)"
+>
+  @for (status of statuses; track status.value) {
+    <option [value]="status.value" [selected]="status.value === value">{{ status.label }}</option>
+  }
+</select>

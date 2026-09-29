@@ -1,176 +1,64 @@
-<div class="task-list-container">
-  <div class="header">
-    <h1>Task Management</h1>
-    <button class="btn btn-primary" (click)="showAddTaskForm()">
-      <i class="icon">➕</i>
-      Add New Task
-    </button>
-  </div>
-
-  <!-- Statistics Cards -->
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-number">{{ getTotalTasks() }}</div>
-      <div class="stat-label">Total Tasks</div>
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1>Tasks</h1>
+      <p class="muted">Plan, track and finish your work.</p>
     </div>
-    <div class="stat-card pending">
-      <div class="stat-number">{{ getTaskCountByStatus(TaskStatus.PENDING) }}</div>
-      <div class="stat-label">Pending</div>
-    </div>
-    <div class="stat-card in-progress">
-      <div class="stat-number">{{ getTaskCountByStatus(TaskStatus.IN_PROGRESS) }}</div>
-      <div class="stat-label">In Progress</div>
-    </div>
-    <div class="stat-card completed">
-      <div class="stat-number">{{ getTaskCountByStatus(TaskStatus.COMPLETED) }}</div>
-      <div class="stat-label">Completed</div>
-    </div>
-  </div>
+    <button class="btn btn-primary" (click)="openForm()">+ New task</button>
+  </header>
 
+  <app-stats-bar [stats]="stats" />
 
-  <!-- Add/Edit Task Form -->
-  @if (showAddForm) {
-    <div class="form-overlay" (click)="cancelForm()">
-      <div class="form-container" (click)="$event.stopPropagation()">
-        <div class="form-header">
-          <h2>{{ isEditing ? 'Edit Task' : 'Add New Task' }}</h2>
-          <button class="btn-close" (click)="cancelForm()">×</button>
-        </div>
-        
-        <form [formGroup]="taskForm" (ngSubmit)="saveTask()" class="task-form">
-          <div class="form-group">
-            <label for="title">Title *</label>
-            <input 
-              type="text" 
-              id="title" 
-              formControlName="title"
-              placeholder="Enter task title"
-              [class.error]="isFieldInvalid('title')"
-            >
-            @if (isFieldInvalid('title')) {
-              <div class="error-message">
-                {{ getFieldError('title') }}
-              </div>
-            }
-          </div>
-
-          <div class="form-group">
-            <label for="description">Description *</label>
-            <textarea 
-              id="description" 
-              formControlName="description"
-              rows="4" 
-              placeholder="Enter task description"
-              [class.error]="isFieldInvalid('description')"
-            ></textarea>
-            @if (isFieldInvalid('description')) {
-              <div class="error-message">
-                {{ getFieldError('description') }}
-              </div>
-            }
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="deadline">Deadline *</label>
-              <input 
-                type="date" 
-                id="deadline" 
-                formControlName="deadline"
-                [class.error]="isFieldInvalid('deadline')"
-              >
-              @if (isFieldInvalid('deadline')) {
-                <div class="error-message">
-                  {{ getFieldError('deadline') }}
-                </div>
-              }
-            </div>
-
-            <div class="form-group">
-              <label for="status">Status</label>
-              <select id="status" formControlName="status">
-                <option value="pending">Pending</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <button type="button" class="btn btn-secondary" (click)="cancelForm()">
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-primary">
-              {{ isEditing ? 'Update Task' : 'Add Task' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  }
-
-  <!-- Tasks List -->
-  @if (tasks.length > 0) {
-    <div class="tasks-grid">
-      @for (task of tasks; track trackByTaskId($index, task)) {
-        <div 
-          class="task-card" 
-          [class.overdue]="isOverdue(task.deadline)"
-        >
-          <div class="task-header">
-            <h3 class="task-title">{{ task.title }}</h3>
-            <div class="task-actions">
-              <button class="btn-icon" (click)="showEditTaskForm(task)" title="Edit">
-                <i class="icon">✏️</i>
-              </button>
-              <button class="btn-icon delete" (click)="deleteTask(task)" title="Delete">
-                <i class="icon">🗑️</i>
-              </button>
-            </div>
-          </div>
-
-          <div class="task-content">
-            <p class="task-description">{{ task.description }}</p>
-            
-            <div class="task-meta">
-              <div class="task-deadline" [class.overdue]="isOverdue(task.deadline)">
-                <i class="icon">📅</i>
-                {{ formatDate(task.deadline) }}
-              </div>
-              
-              <div class="task-status">
-                <select 
-                  [value]="task.status" 
-                  (change)="updateTaskStatus(task, $any($event.target).value)"
-                  class="status-select"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div class="task-footer">
-            <button class="btn btn-outline" (click)="viewTaskDetails(task)">
-              View Details
-            </button>
-            <span class="task-created">
-              Created: {{ formatDate(task.createdAt) }}
-            </span>
-          </div>
-        </div>
+  <!-- Filters -->
+  <div class="toolbar">
+    <div class="tabs">
+      <button class="tab" [class.active]="statusFilter === 'all'" (click)="statusFilter = 'all'">
+        All <span class="count">{{ taskStore.stats.total }}</span>
+      </button>
+      @for (status of statuses; track status.value) {
+        <button class="tab" [class.active]="statusFilter === status.value" (click)="statusFilter = status.value">
+          {{ status.label }} <span class="count">{{ taskStore.countByStatus(status.value) }}</span>
+        </button>
       }
     </div>
-  } @else {
-    <div class="no-tasks">
-      <div class="no-tasks-icon">📝</div>
-      <h3>No tasks found</h3>
-      <p>Get started by adding your first task!</p>
-      <button class="btn btn-primary" (click)="showAddTaskForm()">
-        Add Your First Task
-      </button>
+    <input class="search" type="search" placeholder="Search tasks..." [(ngModel)]="search" aria-label="Search tasks" />
+  </div>
+
+  <!-- Task cards -->
+  @if (taskStore.isLoading && taskStore.tasks.length === 0) {
+    <div class="spinner"></div>
+  } @else if (visibleTasks.length > 0) {
+    <div class="grid">
+      @for (task of visibleTasks; track task.id) {
+        <article class="card task-card status-{{ task.status }}">
+          <div class="task-top">
+            <app-status-badge [status]="task.status" />
+            <span class="deadline" [class.overdue]="isOverdue(task)">
+              {{ isOverdue(task) ? 'Overdue · ' : 'Due ' }}{{ task.deadline | date: 'mediumDate' }}
+            </span>
+          </div>
+
+          <a title="{{task.title}}" class="task-title" [routerLink]="['/tasks', task.id]">{{ (task.title.length>20)? task.title.slice(0,20)+'...':task.title }}</a>
+          <p class="task-description">{{ task.description | plainText }}</p>
+
+          <footer class="task-actions">
+            <app-status-select [value]="task.status" (changed)="changeStatus(task, $event)" />
+            <div class="spacer"></div>
+            <button class="btn btn-ghost btn-sm" (click)="openForm(task)">Edit</button>
+            <button class="btn btn-ghost btn-sm text-danger" (click)="deleteTask(task)">Delete</button>
+          </footer>
+        </article>
+      }
     </div>
+  } @else if (taskStore.tasks.length > 0) {
+    <app-empty-state icon="🔍" title="No matching tasks" message="Try a different filter or search term." />
+  } @else {
+    <app-empty-state icon="📝" title="No tasks yet" message="Create your first task to get started.">
+      <button class="btn btn-primary" (click)="openForm()">+ New task</button>
+    </app-empty-state>
   }
 </div>
+
+@if (formOpen) {
+  <app-task-form [task]="editingTask" (closed)="formOpen = false" />
+}

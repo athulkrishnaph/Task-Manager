@@ -1,111 +1,33 @@
 {
   "tasks": [
     {
-      "id": "1",
-      "title": "Complete Angular Assignment",
-      "description": "Build a comprehensive task management application with Angular 19, MobX, and calendar integration.",
-      "deadline": "2025-12-15T00:00:00.000Z",
-      "status": "in_progress",
-      "createdAt": "2025-12-01T00:00:00.000Z",
-      "updatedAt": "2025-12-01T00:00:00.000Z"
-    },
-    {
-      "id": "2",
-      "title": "Review Code Quality",
-      "description": "Perform code review and ensure best practices are followed throughout the application.",
-      "deadline": "2025-12-20T00:00:00.000Z",
-      "status": "pending",
-      "createdAt": "2025-12-02T00:00:00.000Z",
-      "updatedAt": "2025-12-02T00:00:00.000Z"
-    },
-    {
-      "id": "3",
-      "title": "Write Documentation",
-      "description": "Create comprehensive documentation for the task management system including API documentation and user guides.",
-      "deadline": "2025-12-25T00:00:00.000Z",
-      "status": "pending",
-      "createdAt": "2025-12-03T00:00:00.000Z",
-      "updatedAt": "2025-12-03T00:00:00.000Z"
-    },
-    {
-      "id": "4",
-      "title": "Setup Testing Framework",
-      "description": "Implement unit tests and integration tests for all components and services.",
-      "deadline": "2025-12-18T00:00:00.000Z",
+      "title": "cacaaacacac",
+      "description": "<p>ccxzczxcxzczxc</p>",
+      "deadline": "2026-10-02",
       "status": "completed",
-      "createdAt": "2025-11-28T00:00:00.000Z",
-      "updatedAt": "2025-12-05T00:00:00.000Z"
+      "createdAt": "2026-09-29T06:09:35.925Z",
+      "updatedAt": "2026-09-29T06:14:44.021Z",
+      "id": "fu7AgUj93jI"
+    },
+    {
+      "title": "ccdcdsccs",
+      "description": "<p>vsvsvdvsdv</p>",
+      "deadline": "2026-09-29",
+      "status": "pending",
+      "createdAt": "2026-09-29T06:15:21.611Z",
+      "updatedAt": "2026-09-29T06:15:21.611Z",
+      "id": "1qHyIj6jUeE"
+    },
+    {
+      "title": "nvnvnnvnvnvnvnacjnaackckacnkancjknjsdcncncjsdncsncnsdcsncjkscnjkdsncjsdncsjkdncjsdncjksdnsdnc",
+      "description": "<p>acjnaackckacnkancjknjsdcncncjsdncsncnsdcsncjkscnjkdsncjsdncsjkdncjsdncjksdnsdnc</p>",
+      "deadline": "2026-09-30",
+      "status": "pending",
+      "createdAt": "2026-09-29T06:17:54.787Z",
+      "updatedAt": "2026-09-29T06:20:43.737Z",
+      "id": "jT91GoivLv0"
     }
   ],
-  "comments": [
-    {
-      "id": "1",
-      "taskId": "1",
-      "content": "Great progress on the Angular assignment! The MobX integration looks solid.",
-      "author": "Athul",
-      "createdAt": "2025-12-02T00:00:00.000Z",
-      "updatedAt": "2025-12-02T00:00:00.000Z"
-    },
-    {
-      "id": "2",
-      "taskId": "1",
-      "content": "Thanks! Working on the calendar integration next.",
-      "author": "Amal",
-      "createdAt": "2025-12-02T00:00:00.000Z",
-      "updatedAt": "2025-12-02T00:00:00.000Z",
-      "parentId": "1"
-    },
-    {
-      "id": "3",
-      "taskId": "1",
-      "content": "Don't forget to add proper error handling for the task operations.",
-      "author": "Rahul",
-      "createdAt": "2025-12-03T00:00:00.000Z",
-      "updatedAt": "2025-12-03T00:00:00.000Z"
-    },
-    {
-      "id": "4",
-      "taskId": "2",
-      "content": "Code review scheduled for next week. Please ensure all tests are passing.",
-      "author": "Sarah",
-      "createdAt": "2025-12-04T00:00:00.000Z",
-      "updatedAt": "2025-12-04T00:00:00.000Z"
-    },
-    {
-      "id": "9eae",
-      "taskId": null,
-      "content": "tggtggt5tgtg5tg5",
-      "author": "terter",
-      "createdAt": "2025-12-06T00:00:00.000Z",
-      "updatedAt": "2025-12-06T00:00:00.000Z",
-      "parentId": "cac9"
-    },
-    {
-      "id": "dcba",
-      "taskId": null,
-      "content": "ttttubvu",
-      "author": "terter",
-      "createdAt": "2025-12-06T00:00:00.000Z",
-      "updatedAt": "2025-12-06T00:00:00.000Z",
-      "parentId": "cac9"
-    },
-    {
-      "id": "250a",
-      "taskId": "1",
-      "content": "hhhhhhhhhhhhhhhhhhhhhhhhhh",
-      "author": "fadas",
-      "createdAt": "2025-12-06T00:00:00.000Z",
-      "updatedAt": "2025-12-06T00:00:00.000Z",
-      "parentId": "3"
-    },
-    {
-      "id": "a7e6",
-      "taskId": null,
-      "content": "ssdfdsfsdfdsfdsffds",
-      "author": "vcvsdss",
-      "parentId": "88d0",
-      "createdAt": "2025-10-07T11:06:54.719Z",
-      "updatedAt": "2025-10-07T11:06:54.719Z"
-    }
-  ]
+  "comments": [],
+  "$schema": "./node_modules/json-server/schema.json"
 }
